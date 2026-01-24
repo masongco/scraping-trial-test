@@ -1,18 +1,27 @@
 import requests
+from bs4 import BeautifulSoup
+
+BASE_URL = "https://scraping-trial-test.vercel.app"
 
 def fetch_page(url):
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        return response.txt
-    except requests.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+    response = requests.get(url)
+    return response.text
+
+def parse_page(html):
+    soup = BeautifulSoup(html, "html.parser")
+    names = []
+
+    for card in soup.select(".business-card"):
+        name_el = card.select_one(".business-name")
+        if name_el:
+            names.append(name_el.get_text(strip=True))
+
+    return names
 
 def main():
-    url = "https://scraping-trial-test.vercel.app"
-    html = fetch_page(url)
-    print(len(html))
+    html = fetch_page(BASE_URL)
+    names = parse_page(html)
+    print(names[:5])
 
 
 if __name__ == "__main__":
