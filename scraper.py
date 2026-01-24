@@ -1,27 +1,58 @@
 import requests
 from bs4 import BeautifulSoup
+import json
 
 BASE_URL = "https://scraping-trial-test.vercel.app"
 
 def fetch_page(url):
-    response = requests.get(url)
-    return response.text
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+def get_text(parent, selector):
+    element = parent.select_one(selector)
+    return element.get_text(strip=True) if element else None
 
 def parse_page(html):
     soup = BeautifulSoup(html, "html.parser")
-    names = []
+    records = []
 
-    for card in soup.select(".business-card"):
-        name_el = card.select_one(".business-name")
-        if name_el:
-            names.append(name_el.get_text(strip=True))
+    business_cards = soup.select(".card")
 
-    return names
+    for card in business_cards:
+        record = {
+            "business_name": get_text(card, ".business-name"),
+            "registration_id": get_text(card, ".entity-number"),
+            "status": get_text(card, ".status"),
+            "filing_date": get_text(card, ".filing-date"),
+            "agent_name": get_text(card, ".agent-name"),
+            "agent_address": get_text(card, ".agent-address"),
+            "agent_email": get_text(card, ".agent-email"),
+        }
+
+        records.append(record)
+
+    return records
 
 def main():
     html = fetch_page(BASE_URL)
-    names = parse_page(html)
-    print(names[:5])
+
+    if html is None:
+        print("Failed to retrieve page.")
+        return
+
+    records = parse_page(html)
+
+    if records:
+        print("First record extracted:")
+        print(records[0])
+        print(f"\nTotal records extracted: {len(records)}")
+    else:
+        print("No records found.")
 
 
 if __name__ == "__main__":
