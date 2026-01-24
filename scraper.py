@@ -1,8 +1,13 @@
 import requests
 
 def fetch_page(url):
-    response = requests.get(url)
-    return response.txt
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.txt
+    except requests.RequestException as e:
+        print(f"Error fetching {url}: {e}")
+        return None
 
 def main():
     url = "https://scraping-trial-test.vercel.app"
