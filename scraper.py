@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import json
+import logging
 
 BASE_URL = "https://scraping-trial-test.vercel.app"
 
@@ -10,7 +10,7 @@ def fetch_page(url):
         response.raise_for_status()
         return response.text
     except requests.RequestException as e:
-        print(f"Error fetching {url}: {e}")
+        logging(f"Error fetching {url}: {e}")
         return None
 
 def get_text(parent, selector):
@@ -42,17 +42,17 @@ def main():
     html = fetch_page(BASE_URL)
 
     if html is None:
-        print("Failed to retrieve page.")
+        logging("Failed to retrieve page.")
         return
 
     records = parse_page(html)
 
     if records:
-        print("First record extracted:")
-        print(records[0])
-        print(f"\nTotal records extracted: {len(records)}")
+        logging("First record extracted:")
+        logging(records[0])
+        logging(f"\nTotal records extracted: {len(records)}")
     else:
-        print("No records found.")
+        logging("No records found.")
 
 
 if __name__ == "__main__":
