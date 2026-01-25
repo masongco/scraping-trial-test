@@ -63,20 +63,16 @@ def fetch_dynamic_page(url):
 
 def main():
     html = fetch_page(BASE_URL)
+    records = parse_page(html) if html else []
 
-    if html is None:
-        logging.error("Failed to retrieve page.")
+    if not records:
+        logging.warning("No records found with requests + BS4, trying Selenium...")
+        html = fetch_dynamic_page(BASE_URL)
+        records = parse_page(html) if html else []
+
+    if not records:
+        logging.error("No records could be extracted even with Selenium.")
         return
-
-    records = parse_page(html)
-
-    if records:
-        logging.info("First record extracted:")
-        logging.info(records[0])
-        logging.info(f"\nTotal records extracted: {len(records)}")
-    else:
-        logging.error("No records found.")
-
 
 if __name__ == "__main__":
     main()
