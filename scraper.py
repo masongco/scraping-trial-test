@@ -1,90 +1,63 @@
 import requests
 import logging
-import json
 import uuid
 
-BASE_API_URL = "https://scraping-trial-test.vercel.app/api/search"
-SEARCH_QUERY = "Tech"
-OUTPUT_FILE = "output.json"
-
 logging.basicConfig(
-    filename="scraper.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def fetch_page(query, page):
-    search_session = str(uuid.uuid4())
+BASE_URL = "https://scraping-trial-test.vercel.app"
+API_URL = f"{BASE_URL}/api/search"
 
-    # copied the headers for testing.
-    headers = {
+def build_headers(query: str) -> dict:
+    return {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            "Version/26.1 Safari/605.1.15"
+        ),
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Referer": f"https://scraping-trial-test.vercel.app/search/results?q={query}",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Safari/605.1.15",
-        "x-search-session": search_session
+        "Accept-Encoding": "gzip, deflate, br",
+
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+
+        "Referer": f"{BASE_URL}/search/results?q={query}",
+        "Origin": BASE_URL,
+
+        "x-search-session": str(uuid.uuid4()),
     }
 
-    params = {
-        "q": query,
-        "page": page
-    }
+def fetch_page(query: str):
+    headers = build_headers(query)
 
-    try:
-        logging.info(f"Fetching page {page} for query='{query}'")
-        response = requests.get(
-            BASE_API_URL,
-            headers=headers,
-            params=params,
-            timeout=10
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        logging.error(f"API request failed: {e}")
-        return None
+    logging.info("Fetching page 1 for query='%s'", query)
+    logging.info("Using x-search-session=%s", headers["x-search-session"])
 
-def parse_results(data):
-    records = []
+    resp = requests.get(
+        API_URL,
+        headers=headers,
+        params={"q": query, "page": 1},
+        timeout=15,
+    )
 
-    if not data or "results" not in data:
-        logging.error("Invalid or empty API response")
-        return records
-
-    for item in data["results"]:
-        record = {
-            "business_name": item.get("businessName"),
-            "registration_id": item.get("registrationId"),
-            "status": item.get("status"),
-            "filing_date": item.get("filingDate"),
-            "agent_name": item.get("agent", {}).get("name"),
-            "agent_address": item.get("agent", {}).get("address"),
-            "agent_email": item.get("agent", {}).get("email")
-        }
-        records.append(record)
-
-    return records
-
-def save_output(records):
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=2)
-
-    logging.info(f"Saved {len(records)} records to {OUTPUT_FILE}")
+    resp.raise_for_status()
+    return resp.json()
 
 def main():
-    data = fetch_page(SEARCH_QUERY, page=1)
+    try:
+        data = fetch_page("Tech")
+        results = data.get("results", [])
+        logging.info("Fetched %d records", len(results))
+        return results
 
-    if not data:
-        logging.warning("No data fetched")
-        return
-
-    records = parse_results(data)
-
-    if not records:
-        logging.warning("No records parsed")
-        return
-
-    save_output(records)
+    except requests.HTTPError as e:
+        logging.error("API request failed: %s", e)
+    except Exception:
+        logging.exception("Unexpected error")
 
 if __name__ == "__main__":
     main()
