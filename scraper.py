@@ -1,6 +1,6 @@
 import requests
 import logging
-import uuid
+from bootstrap_session import get_search_session
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,32 +10,29 @@ logging.basicConfig(
 BASE_URL = "https://scraping-trial-test.vercel.app"
 API_URL = f"{BASE_URL}/api/search"
 
-def build_headers(query: str) -> dict:
-    return {
+def fetch_page(query: str):
+    session_id = get_search_session(query)
+    if not session_id:
+        raise RuntimeError("Failed to obtain search session")
+
+    headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/605.1.15 (KHTML, like Gecko) "
             "Version/26.1 Safari/605.1.15"
         ),
         "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
-
+        "Accept-Language": "en-US,en;q=0.9",
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
-
         "Referer": f"{BASE_URL}/search/results?q={query}",
         "Origin": BASE_URL,
-
-        "x-search-session": str(uuid.uuid4()),
+        "x-search-session": session_id,
     }
 
-def fetch_page(query: str):
-    headers = build_headers(query)
-
-    logging.info("Fetching page 1 for query='%s'", query)
-    logging.info("Using x-search-session=%s", headers["x-search-session"])
+    logging.info("Using validated x-search-session=%s", session_id)
 
     resp = requests.get(
         API_URL,
@@ -48,16 +45,9 @@ def fetch_page(query: str):
     return resp.json()
 
 def main():
-    try:
-        data = fetch_page("Tech")
-        results = data.get("results", [])
-        logging.info("Fetched %d records", len(results))
-        return results
-
-    except requests.HTTPError as e:
-        logging.error("API request failed: %s", e)
-    except Exception:
-        logging.exception("Unexpected error")
+    data = fetch_page("Tech")
+    results = data.get("results", [])
+    logging.info("Fetched %d records", len(results))
 
 if __name__ == "__main__":
     main()
