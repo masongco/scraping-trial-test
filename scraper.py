@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import logging
+import json
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -61,6 +62,11 @@ def fetch_dynamic_page(url):
     finally:
         driver.quit()
 
+def save_output(records, filename="output.json"):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    logging.info(f"Saved {len(records)} records to {filename}")
+
 def main():
     html = fetch_page(BASE_URL)
     records = parse_page(html) if html else []
@@ -73,6 +79,8 @@ def main():
     if not records:
         logging.error("No records could be extracted even with Selenium.")
         return
+    
+    save_output(records)
 
 if __name__ == "__main__":
     main()
