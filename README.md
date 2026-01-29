@@ -33,22 +33,9 @@ venvScriptsactivate  # On Windows
 ### Basic Search
 
 ```bash
-python scraper.py "Silver Tech"
-```
-
-### Interactive Mode
-
-```bash
 python scraper.py
-# Then enter search query when prompted
 ```
 
-### Specify Custom Query
-
-```bash
-python scraper.py "Gold"
-python scraper.py "Services"
-```
 
 ## How It Works
 
